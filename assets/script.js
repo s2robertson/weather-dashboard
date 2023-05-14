@@ -77,6 +77,7 @@ $(function() {
             }
         }
         displayCurrentWeather(savedLocations[index].currentWeatherData);
+        displayForecastWeather(savedLocations[index].forecastWeatherData);
     }
 
     function isTenMinutesOld(index) {
@@ -94,7 +95,7 @@ $(function() {
         );
         const temp = $(`<p>Temperature: ${weatherData.main.temp}&deg;C</p>`);
         const wind = $(`<p>Wind: ${weatherData.wind.speed} m/s</p>`);
-        const humidity = $(`<p>Humidity: ${weatherData.main.humidity}</p>`);
+        const humidity = $(`<p>Humidity: ${weatherData.main.humidity}%</p>`);
 
         currentWeatherSection.empty();
         currentWeatherSection.append(header, temp, wind, humidity);
@@ -138,8 +139,8 @@ $(function() {
                 if (currentDayData) {
                     currentDayData.icons = Array.from(currentDayData.icons);
                     results.push(currentDayData);
-                    currentDayStr = snapshotDayStr;
                 }
+                currentDayStr = snapshotDayStr;
 
                 currentDayData = {
                     day: snapshotDayStr,
@@ -161,10 +162,26 @@ $(function() {
         });
 
         // remove forecast for later in the same day
-        currentDayStr = formatter.format(new Date());
+        /*currentDayStr = formatter.format(new Date());
         if (results[0].day == currentDayStr) {
             results.shift();
-        }
+        }*/
         return results;
+    }
+
+    function displayForecastWeather(weatherData) {
+        forecastSection.empty();
+        forecastSection.append(weatherData.map(
+            forecastElem => $('<div></div>').append(
+                $(`<h2>${forecastElem.day}</h2>`),
+                $('<div></div>').append(
+                    forecastElem.icons.map(icon => $(`<img src='https://openweathermap.org/img/wn/${icon}.png' />`))
+                ),
+                $(`<p>High: ${forecastElem.high}&deg;C</p>`),
+                $(`<p>Low: ${forecastElem.low}&deg;C</p>`),
+                $(`<p>Wind: ${forecastElem.wind} m/s</p>`),
+                $(`<p>Humidity: ${forecastElem.humidity}%</p>`)
+            )
+        ));
     }
 })
