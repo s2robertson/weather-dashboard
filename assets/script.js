@@ -15,8 +15,13 @@ $(function() {
 
     function displayLocationInList(location, index) {
         const listEl = $(`<li data-index=${index}><button >${location.name}</button></li>`);
-        listEl.children().on('click', setCurrentCity);
+        listEl.children().on('click', setCurrentCityButtonHandler);
         savedLocationsListEl.append(listEl);
+    }
+
+    function setCurrentCityButtonHandler() {
+        const index = $(this).parent().attr('data-index');
+        setCurrentCity(index);
     }
 
     $('#city-form').on('submit', function(event) {
@@ -58,12 +63,20 @@ $(function() {
         }
     }
 
-    async function setCurrentCity() {
-        const index = $(this).parent().attr('data-index');
+    async function setCurrentCity(index) {
         if (isTenMinutesOld(index)) {
-            await fetchCurrentWeatherData(index);
+            let [currentData, forecastData] = await Promise.all([
+                fetchCurrentWeatherData(index),
+                fetchForecastWeatherData(index)
+            ]);
+            if (currentData && forecastData) {
+                savedLocations[index].date = Date.now();
+                savedLocations[index].currentWeatherData = currentData;
+                savedLocations[index].forecastWeatherData = forecastData;
+                localStorage.setItem(storageKey, JSON.stringify(savedLocations));
+            }
         }
-        displayCurrentWeather(savedLocations[index].weatherData);
+        displayCurrentWeather(savedLocations[index].currentWeatherData);
     }
 
     function isTenMinutesOld(index) {
@@ -93,11 +106,65 @@ $(function() {
 
         const fetchResult = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appId=${apiKey}&units=metric`);
         if (!fetchResult.ok) {
+            console.log(`Fetching current weather data failed: status ${fetchResult.status}`);
+            return;
+        }
+
+        return await fetchResult.json();
+    }
+
+    async function fetchForecastWeatherData(index) {
+        const lat = savedLocations[index].lat;
+        const lon = savedLocations[index].lon;
+
+        const fetchResult = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appId=${apiKey}&units=metric`);
+        if (!fetchResult.ok) {
+            console.log(`Fetching weather forecast data failed: status ${fetchResult.status}`);
             return;
         }
 
         const fetchData = await fetchResult.json();
-        savedLocations[index].weatherData = fetchData;
-        savedLocations[index].date = Date.now();
+        return processForecastWeatherData(fetchData);
+    }
+
+    function processForecastWeatherData(data) {
+        const results = [];
+        const formatter = new Intl.DateTimeFormat();
+        let currentDayStr;
+        let currentDayData;
+        data.list.forEach(snapshot => {
+            const snapshotDayStr = formatter.format(snapshot.dt * 1000);
+            if (snapshotDayStr != currentDayStr) {
+                if (currentDayData) {
+                    currentDayData.icons = Array.from(currentDayData.icons);
+                    results.push(currentDayData);
+                    currentDayStr = snapshotDayStr;
+                }
+
+                currentDayData = {
+                    day: snapshotDayStr,
+                    high: -Infinity,
+                    low: Infinity,
+                    wind: -Infinity,
+                    humidity: -Infinity,
+                    icons: new Set()
+                }
+            }
+
+            currentDayData.high = Math.max(currentDayData.high, snapshot.main.temp);
+            currentDayData.low = Math.min(currentDayData.low, snapshot.main.temp);
+            currentDayData.wind = Math.max(currentDayData.wind, snapshot.wind.speed);
+            currentDayData.humidity = Math.max(currentDayData.humidity, snapshot.main.humidity);
+            if (snapshot.weather[0].icon.endsWith('d')) {
+                currentDayData.icons.add(snapshot.weather[0].icon);
+            }
+        });
+
+        // remove forecast for later in the same day
+        currentDayStr = formatter.format(new Date());
+        if (results[0].day == currentDayStr) {
+            results.shift();
+        }
+        return results;
     }
 })
