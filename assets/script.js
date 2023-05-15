@@ -4,6 +4,7 @@ let savedLocations;
 let currIndex;
 
 $(function() {
+    const citySearchForm = $('#city-search-form');
     const savedLocationsListEl = $('#saved-locations-list');
     const currentWeatherSection = $('#current-weather');
     const forecastSection = $('#5-day-forecast');
@@ -40,16 +41,34 @@ $(function() {
         localStorage.setItem(storageKey, JSON.stringify(savedLocations));
     }
 
-    $('#city-form').on('submit', function(event) {
+    citySearchForm.on('submit', function(event) {
         event.preventDefault();
 
         const searchTerm = $('#city-input').val();
         fetchGeocodingData(searchTerm);
     })
 
+    let disabledCount = 0;
+    function setNavigationEnabled(val) {
+        const elementsToAdjust = citySearchForm.children().add('#saved-locations-list button');
+        if (val == true) {
+            disabledCount--;
+            if (disabledCount == 0) {
+                elementsToAdjust.prop('disabled', false);
+            }
+        } else {
+            if (disabledCount == 0) {
+                elementsToAdjust.prop('disabled', true);
+            }
+            disabledCount++;
+        }
+    }
+
     async function fetchGeocodingData(searchTerm) {
+        setNavigationEnabled(false);
         const fetchResult = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${searchTerm}&appId=${apiKey}`);
         if (!fetchResult.ok) {
+            setNavigationEnabled(true);
             return;
         }
         const fetchData = await fetchResult.json();
@@ -82,6 +101,7 @@ $(function() {
                     setCurrentCity(savedLocations.length - 1);
                 }
             });
+            setNavigationEnabled(true);
             if (updateLocalStorage) {
                 localStorage.setItem(storageKey, JSON.stringify(savedLocations));
             }
@@ -90,6 +110,7 @@ $(function() {
 
     async function setCurrentCity(index) {
         if (isTenMinutesOld(index)) {
+            setNavigationEnabled(false);
             let [currentData, forecastData] = await Promise.all([
                 fetchCurrentWeatherData(index),
                 fetchForecastWeatherData(index)
@@ -100,6 +121,7 @@ $(function() {
                 savedLocations[index].forecastWeatherData = forecastData;
                 localStorage.setItem(storageKey, JSON.stringify(savedLocations));
             }
+            setNavigationEnabled(true);
         }
         displayCurrentWeather(savedLocations[index].currentWeatherData);
         displayForecastWeather(savedLocations[index].forecastWeatherData);
