@@ -48,7 +48,7 @@ $(function() {
     })
 
     async function fetchGeocodingData(searchTerm) {
-        const fetchResult = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${searchTerm}&appId=${apiKey}`);
+        const fetchResult = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${searchTerm}&appId=${apiKey}`);
         if (!fetchResult.ok) {
             return;
         }
