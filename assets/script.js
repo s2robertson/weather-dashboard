@@ -44,13 +44,6 @@ $(function() {
         event.preventDefault();
 
         const searchTerm = $('#city-input').val();
-        const existingIndex = savedLocations.findIndex(location => location.name == searchTerm);
-        if (existingIndex != -1) {
-            // switch to the existing city
-            console.log('city already found');
-            return;
-        }
-
         fetchGeocodingData(searchTerm);
     })
 
@@ -61,12 +54,23 @@ $(function() {
         }
         const fetchData = await fetchResult.json();
         if (Array.isArray(fetchData) && fetchData.length > 0) {
+            let updateLocalStorage = false;
             fetchData.forEach(location => {
                 let nameStr = location.name;
                 if (location.state) {
                     nameStr += ', ' + location.state;
                 }
                 nameStr += ', ' + location.country;
+
+                const existingIndex = savedLocations.findIndex(savedLoc => savedLoc.name == nameStr);
+                if (existingIndex != -1) {
+                    if (fetchData.length == 1) {
+                        return setCurrentCity(existingIndex);
+                    }
+                    return;
+                }
+                
+                updateLocalStorage = true;
                 const locationToSave = {
                     name: nameStr,
                     lat: location.lat,
@@ -74,8 +78,13 @@ $(function() {
                 }
                 savedLocations.push(locationToSave);
                 displayLocationInList(locationToSave, savedLocations.length - 1);
+                if (fetchData.length == 1) {
+                    setCurrentCity(savedLocations.length - 1);
+                }
             });
-            localStorage.setItem(storageKey, JSON.stringify(savedLocations));
+            if (updateLocalStorage) {
+                localStorage.setItem(storageKey, JSON.stringify(savedLocations));
+            }
         }
     }
 
