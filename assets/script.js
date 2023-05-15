@@ -190,23 +190,28 @@ $(function() {
 
     function displayForecastWeather(weatherData) {
         forecastSection.empty();
-        forecastSection.append(weatherData.map(
-            forecastElem => $(`<div class='col'></div`).append(
-                $(`<div class='card'></div>`).append(
-                    $(`<div class='card-header bg-primary text-white'></div>`).append(
-                        $(`<h2>${forecastElem.day}</h2>`),
-                        $('<div></div>').append(
-                            forecastElem.icons.map(icon => $(`<img src='https://openweathermap.org/img/wn/${icon}.png' />`))
+        forecastSection.append(
+            $(`<h2 class='mb-3'>5-Day Forecast:</h2>`),
+            $(`<div class='row row-cols-auto g-3'></div>`).append(
+                weatherData.map(forecastElem => 
+                    $(`<div class='col'></div`).append(
+                        $(`<div class='card'></div>`).append(
+                            $(`<div class='card-header bg-primary text-white'></div>`).append(
+                                $(`<h3>${forecastElem.day}</h3>`),
+                                $('<div></div>').append(
+                                    forecastElem.icons.map(icon => $(`<img src='https://openweathermap.org/img/wn/${icon}.png' />`))
+                                )
+                            ),
+                            $(`<div class='card-body'></div>`).append(
+                                $(`<p class='card-text'>High: ${forecastElem.high}&deg;C</p>`),
+                                $(`<p class='card-text'>Low: ${forecastElem.low}&deg;C</p>`),
+                                $(`<p class='card-text'>Wind: ${forecastElem.wind} m/s</p>`),
+                                $(`<p class='card-text'>Humidity: ${forecastElem.humidity}%</p>`)
+                            )
                         )
-                    ),
-                    $(`<div class='card-body'></div>`).append(
-                        $(`<p class='card-text'>High: ${forecastElem.high}&deg;C</p>`),
-                        $(`<p class='card-text'>Low: ${forecastElem.low}&deg;C</p>`),
-                        $(`<p class='card-text'>Wind: ${forecastElem.wind} m/s</p>`),
-                        $(`<p class='card-text'>Humidity: ${forecastElem.humidity}%</p>`)
                     )
                 )
             )
-        ));
+        );
     }
 })
