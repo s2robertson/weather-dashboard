@@ -14,8 +14,8 @@ $(function() {
     savedLocations.forEach(displayLocationInList);
 
     function displayLocationInList(location, index) {
-        const listEl = $(`<li data-index=${index} class='list-group-item'></li>`).append(
-            $(`<button class='btn btn-primary'>${location.name}</button>`)
+        const listEl = $(`<li data-index=${index} class='list-group-item d-flex'></li>`).append(
+            $(`<button class='btn btn-primary flex-grow-1'>${location.name}</button>`)
         );
         listEl.children().on('click', setCurrentCityButtonHandler);
         savedLocationsListEl.append(listEl);
