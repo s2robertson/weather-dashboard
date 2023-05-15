@@ -11,19 +11,33 @@ $(function() {
     // load saved locations from localStorage
     savedLocations = localStorage.getItem(storageKey);
     savedLocations = savedLocations != null ? JSON.parse(savedLocations) : [];
-    savedLocations.forEach(displayLocationInList);
+    displayLocationList();
+
+    function displayLocationList() {
+        savedLocationsListEl.empty();
+        savedLocations.forEach(displayLocationInList);
+    }
 
     function displayLocationInList(location, index) {
-        const listEl = $(`<li data-index=${index} class='list-group-item d-flex'></li>`).append(
-            $(`<button class='btn btn-primary flex-grow-1'>${location.name}</button>`)
+        const listEl = $(`<li data-index=${index} class='list-group-item d-flex align-items-center'></li>`).append(
+            $(`<button class='btn btn-primary flex-grow-1 me-1'>${location.name}</button>`),
+            $(`<button class='btn-close' aria-label='Remove ${location.name} from shortcuts'></button>`)
         );
-        listEl.children().on('click', setCurrentCityButtonHandler);
+        listEl.children().eq(0).on('click', setCurrentCityButtonHandler);
+        listEl.children().eq(1).on('click', removeSavedLocationButtonHandler);
         savedLocationsListEl.append(listEl);
     }
 
     function setCurrentCityButtonHandler() {
         const index = $(this).parent().attr('data-index');
         setCurrentCity(index);
+    }
+
+    function removeSavedLocationButtonHandler() {
+        const index = $(this).parent().attr('data-index');
+        savedLocations.splice(index, 1);
+        displayLocationList();
+        localStorage.setItem(storageKey, JSON.stringify(savedLocations));
     }
 
     $('#city-form').on('submit', function(event) {
