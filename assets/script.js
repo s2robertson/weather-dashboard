@@ -14,7 +14,9 @@ $(function() {
     savedLocations.forEach(displayLocationInList);
 
     function displayLocationInList(location, index) {
-        const listEl = $(`<li data-index=${index}><button >${location.name}</button></li>`);
+        const listEl = $(`<li data-index=${index} class='list-group-item'></li>`).append(
+            $(`<button class='btn btn-primary'>${location.name}</button>`)
+        );
         listEl.children().on('click', setCurrentCityButtonHandler);
         savedLocationsListEl.append(listEl);
     }
@@ -90,15 +92,18 @@ $(function() {
     }
 
     function displayCurrentWeather(weatherData) {
-        const header = $(`<h2>${weatherData.name} (${new Date().toLocaleDateString()})</h2>`).append(
-            $(`<img src='https://openweathermap.org/img/wn/${weatherData.weather[0].icon}.png' />`)
-        );
-        const temp = $(`<p>Temperature: ${weatherData.main.temp}&deg;C</p>`);
-        const wind = $(`<p>Wind: ${weatherData.wind.speed} m/s</p>`);
-        const humidity = $(`<p>Humidity: ${weatherData.main.humidity}%</p>`);
-
         currentWeatherSection.empty();
-        currentWeatherSection.append(header, temp, wind, humidity);
+        currentWeatherSection.append(
+            $(`<h2 class='bg-primary text-white p-3'>${weatherData.name} (${new Date().toLocaleDateString()})</h2>`).append(
+                $(`<img src='https://openweathermap.org/img/wn/${weatherData.weather[0].icon}.png' />`)
+            ),
+            $(`<div class='px-3'></div>`).append(
+                $(`<p>Temperature: ${weatherData.main.temp}&deg;C</p>`),
+                $(`<p>Wind: ${weatherData.wind.speed} m/s</p>`),
+                $(`<p>Humidity: ${weatherData.main.humidity}%</p>`)
+            )
+        );
+        currentWeatherSection.addClass(['border', 'border-2', 'border-primary', 'rounded']);
     }
 
     async function fetchCurrentWeatherData(index) {
@@ -133,15 +138,19 @@ $(function() {
         const formatter = new Intl.DateTimeFormat();
         let currentDayStr;
         let currentDayData;
+        let firstSnapshotOfDay;
+
         data.list.forEach(snapshot => {
             const snapshotDayStr = formatter.format(snapshot.dt * 1000);
             if (snapshotDayStr != currentDayStr) {
                 if (currentDayData) {
+                    if (currentDayData.icons.size == 0) {
+                        currentDayData.icons.add(firstSnapshotOfDay.weather[0].icon);
+                    }
                     currentDayData.icons = Array.from(currentDayData.icons);
                     results.push(currentDayData);
                 }
                 currentDayStr = snapshotDayStr;
-
                 currentDayData = {
                     day: snapshotDayStr,
                     high: -Infinity,
@@ -150,6 +159,7 @@ $(function() {
                     humidity: -Infinity,
                     icons: new Set()
                 }
+                firstSnapshotOfDay = snapshot;
             }
 
             currentDayData.high = Math.max(currentDayData.high, snapshot.main.temp);
@@ -161,26 +171,27 @@ $(function() {
             }
         });
 
-        // remove forecast for later in the same day
-        /*currentDayStr = formatter.format(new Date());
-        if (results[0].day == currentDayStr) {
-            results.shift();
-        }*/
         return results;
     }
 
     function displayForecastWeather(weatherData) {
         forecastSection.empty();
         forecastSection.append(weatherData.map(
-            forecastElem => $('<div></div>').append(
-                $(`<h2>${forecastElem.day}</h2>`),
-                $('<div></div>').append(
-                    forecastElem.icons.map(icon => $(`<img src='https://openweathermap.org/img/wn/${icon}.png' />`))
-                ),
-                $(`<p>High: ${forecastElem.high}&deg;C</p>`),
-                $(`<p>Low: ${forecastElem.low}&deg;C</p>`),
-                $(`<p>Wind: ${forecastElem.wind} m/s</p>`),
-                $(`<p>Humidity: ${forecastElem.humidity}%</p>`)
+            forecastElem => $(`<div class='col'></div`).append(
+                $(`<div class='card'></div>`).append(
+                    $(`<div class='card-header bg-primary text-white'></div>`).append(
+                        $(`<h2>${forecastElem.day}</h2>`),
+                        $('<div></div>').append(
+                            forecastElem.icons.map(icon => $(`<img src='https://openweathermap.org/img/wn/${icon}.png' />`))
+                        )
+                    ),
+                    $(`<div class='card-body'></div>`).append(
+                        $(`<p class='card-text'>High: ${forecastElem.high}&deg;C</p>`),
+                        $(`<p class='card-text'>Low: ${forecastElem.low}&deg;C</p>`),
+                        $(`<p class='card-text'>Wind: ${forecastElem.wind} m/s</p>`),
+                        $(`<p class='card-text'>Humidity: ${forecastElem.humidity}%</p>`)
+                    )
+                )
             )
         ));
     }
